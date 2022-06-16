@@ -1,0 +1,24 @@
+[package]
+name = "aws-lib"
+version = "0.0.1"
+edition = "2021"
+authors = [ "dev@pubstack.io" ]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde = { version="1.0.130", features = [ "derive" ] }
+serde_json = "1.0.71"
+serde_dynamo = { version = "4.0.2", features = [ "aws-sdk-dynamodb+0_13" ] }
+
+# AWS
+aws-config = { version =  "0.13.0", default-features = false, features = [ "native-tls" ] }
+aws-types = { version =  "0.13.0" }
+aws-sdk-dynamodb = { version = "0.13.0", default-features = false, features = [ "native-tls" ] }
+
+
+
+[features]
+all = [ "dynamodb" ]
+default = [ "all" ]
+dynamodb = []

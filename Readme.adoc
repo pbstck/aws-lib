@@ -1,0 +1,6 @@
+= AWS Library
+
+== How to contribute
+
+If you create a client for an AWS resource, please use a cargo feature as `dynamo`.
+For now by default we include all the features.
