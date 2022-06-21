@@ -48,7 +48,7 @@ impl LambdaClient {
             .await
             .unwrap();
         LambdaResult {
-            base64_logs: res.log_result.unwrap_or_else(|| "".to_string()),
+            base64_logs: res.log_result.unwrap_or("".to_string()),
             payload: res.payload.unwrap().into_inner(),
         }
     }
