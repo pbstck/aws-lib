@@ -23,7 +23,7 @@ impl LambdaResult {
             .unwrap()
     }
     pub fn get_payload(&self) -> String {
-        std::str::from_utf8(&self.payload).unwrap().to_string()
+        String::from_utf8(self.payload.clone()).unwrap()
     }
 }
 
