@@ -15,10 +15,12 @@ serde_dynamo = { version = "4.0.2", features = [ "aws-sdk-dynamodb+0_13" ] }
 aws-config = { version =  "0.13.0", default-features = false, features = [ "native-tls" ] }
 aws-types = { version =  "0.13.0" }
 aws-sdk-dynamodb = { version = "0.13.0", default-features = false, features = [ "native-tls" ] }
-
-
+aws-sdk-lambda = { version = "0.13.0", default-features = false, features = ["native-tls"]}
+aws-smithy-types = "0.34.1"
+bytes = "1.1.0"
 
 [features]
-all = [ "dynamodb" ]
+all = [ "dynamodb", "lambda" ]
 default = [ "all" ]
 dynamodb = []
+lambda = []
