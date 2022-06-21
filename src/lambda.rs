@@ -19,9 +19,8 @@ pub struct LambdaResult {
 
 impl LambdaResult {
     pub fn get_logs(&self) -> String {
-        std::str::from_utf8(&base64::decode(&self.base64_logs).unwrap())
+        String::from_utf8(base64::decode(&self.base64_logs).unwrap())
             .unwrap()
-            .to_string()
     }
     pub fn get_payload(&self) -> String {
         std::str::from_utf8(&self.payload).unwrap().to_string()
