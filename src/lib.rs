@@ -6,3 +6,4 @@ pub mod config;
 pub mod errors;
 #[cfg(feature = "dynamodb")]
 pub mod dynamodb;
+pub mod log;
