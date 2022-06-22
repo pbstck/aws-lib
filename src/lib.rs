@@ -12,3 +12,7 @@ pub extern crate aws_types;
 pub mod dynamodb;
 #[cfg(feature = "dynamodb")]
 pub extern crate aws_sdk_dynamodb;
+#[cfg(feature = "lambda")]
+pub mod lambda;
+#[cfg(feature = "lambda")]
+pub extern crate aws_sdk_lambda;
