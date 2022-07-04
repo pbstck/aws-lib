@@ -16,7 +16,8 @@ aws-config = { version =  "0.13.0", default-features = false, features = [ "nati
 aws-types = { version =  "0.13.0" }
 aws-sdk-dynamodb = { version = "0.13.0", default-features = false, features = [ "native-tls" ] }
 aws-sdk-lambda = { version = "0.13.0", default-features = false, features = ["native-tls"]}
-aws-smithy-types = "0.43.0"
+aws-smithy-types = "0.45.0"
+aws-sdk-ecs = { version = "0.13.0", default-features = false, features = ["native-tls"]}
 
 # Log
 tracing-subscriber = { version = "0.3.9", features = ["json", "env-filter"]}
@@ -25,7 +26,8 @@ tracing = { version = "0.1.31" }
 bytes = "1.1.0"
 
 [features]
-all = [ "dynamodb", "lambda" ]
+all = [ "dynamodb", "lambda", "ecs" ]
 default = [ "all" ]
 dynamodb = []
 lambda = []
+ecs = []
