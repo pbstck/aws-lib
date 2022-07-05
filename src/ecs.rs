@@ -1,11 +1,13 @@
 use crate::config::get_default_config;
 use crate::errors::AwsError;
-pub use aws_sdk_ecs::model::{
-    AssignPublicIp, AwsVpcConfiguration, KeyValuePair, NetworkConfiguration,
+pub use aws_sdk_ecs::model::KeyValuePair;
+use aws_sdk_ecs::model::{
+    AssignPublicIp, AwsVpcConfiguration, ContainerOverride, LaunchType, NetworkConfiguration,
+    PropagateTags, TaskOverride,
 };
-use aws_sdk_ecs::model::{ContainerOverride, LaunchType, PropagateTags, TaskOverride};
 use aws_sdk_ecs::RetryConfig;
 use aws_types::SdkConfig;
+use serde::Deserialize;
 
 /// An Elastic Container Service client
 pub struct EcsClient {
@@ -51,7 +53,7 @@ impl EcsClient {
         task_name: &str,
         container_name: &str,
         cluster_name: &str,
-        network_config: NetworkConfiguration,
+        network_config: EcsNetworkConfiguration,
         override_config: T,
     ) -> Result<(), AwsError> {
         let task_override = TaskOverride::builder()
@@ -69,7 +71,7 @@ impl EcsClient {
             .cluster(cluster_name.to_string())
             .count(1)
             .launch_type(LaunchType::Fargate)
-            .network_configuration(network_config)
+            .network_configuration(network_config.into())
             .task_definition(task_name.to_string())
             .overrides(task_override)
             .propagate_tags(PropagateTags::TaskDefinition)
@@ -94,6 +96,9 @@ pub trait EcsOverrideEnv {
     /// Example taken from the `kleanads-build-spawner` project:
     ///
     /// ```
+    /// use aws_sdk_ecs::model::KeyValuePair;
+    /// use aws_lib::ecs::EcsOverrideEnv;
+    ///
     /// struct KleanadsBuilderConfig {
     ///     scope_config_id: String,
     ///     debug: bool,
@@ -115,4 +120,56 @@ pub trait EcsOverrideEnv {
     /// }
     /// ```
     fn create_ecs_override_env(self) -> Vec<KeyValuePair>;
+}
+
+/// Simplified network configuration for ECS launch tasks
+///
+/// This configuration can be parameterized with subnets only. Internally the `AssignPublicIp` parameter is always enabled.
+///
+/// # Examples
+///
+/// ```
+/// use aws_lib::ecs::EcsNetworkConfiguration;
+///
+/// let subnets = vec!["subnet-0941bb6933678e431".to_string(), "subnet-06581bd8767347cd0".to_string()];
+/// let network_configuration = EcsNetworkConfiguration::new(subnets);
+/// ```
+///
+/// Since this structure implements `Deserialize`, you can also create your configuration from environment variables, for instance using the `envy` crate:
+///
+/// ```
+/// use std::env;
+/// use aws_lib::ecs::EcsNetworkConfiguration;
+///
+/// // The SUBNETS env var is a comma separated list of subnets
+/// env::set_var(
+///     "SUBNETS",
+///     "subnet-0941bb6933678e431,subnet-06581bd8767347cd0",
+/// );
+///
+/// let network_config = envy::from_env::<EcsNetworkConfiguration>().unwrap();
+/// ```
+#[derive(Debug, Deserialize, Clone)]
+pub struct EcsNetworkConfiguration {
+    /// The list of subnets for the configuration
+    subnets: Vec<String>,
+}
+
+impl EcsNetworkConfiguration {
+    pub fn new(subnets: Vec<String>) -> Self {
+        EcsNetworkConfiguration { subnets }
+    }
+}
+
+impl From<EcsNetworkConfiguration> for NetworkConfiguration {
+    fn from(network_config: EcsNetworkConfiguration) -> Self {
+        NetworkConfiguration::builder()
+            .awsvpc_configuration(
+                AwsVpcConfiguration::builder()
+                    .set_subnets(Some(network_config.subnets))
+                    .assign_public_ip(AssignPublicIp::Enabled)
+                    .build(),
+            )
+            .build()
+    }
 }

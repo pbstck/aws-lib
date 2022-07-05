@@ -31,3 +31,7 @@ default = [ "all" ]
 dynamodb = []
 lambda = []
 ecs = []
+
+[dev-dependencies]
+# Used for "ecs" module doc example
+envy = "0.4.2"
