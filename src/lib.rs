@@ -20,3 +20,5 @@ pub mod log;
 
 #[cfg(feature = "ecs")]
 pub mod ecs;
+#[cfg(feature = "ecs")]
+pub extern crate aws_sdk_ecs;
