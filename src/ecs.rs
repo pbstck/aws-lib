@@ -1,9 +1,9 @@
 use crate::config::get_default_config;
 use crate::errors::AwsError;
-use crate::KeyValuePair;
-use aws_sdk_ecs::model::PropagateTags;
-pub use aws_sdk_ecs::model::{AssignPublicIp, NetworkConfiguration};
-use aws_sdk_ecs::model::{ContainerOverride, LaunchType, TaskOverride};
+pub use aws_sdk_ecs::model::{
+    AssignPublicIp, AwsVpcConfiguration, KeyValuePair, NetworkConfiguration,
+};
+use aws_sdk_ecs::model::{ContainerOverride, LaunchType, PropagateTags, TaskOverride};
 use aws_sdk_ecs::RetryConfig;
 use aws_types::SdkConfig;
 
