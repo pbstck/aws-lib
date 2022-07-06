@@ -10,7 +10,6 @@ pub struct DynamoDbClient {
 }
 
 impl DynamoDbClient {
-
     /// Creates the client with the given configuration and configure the number of retries to [DEFAULT_RETRY_COUNT]
     pub fn new(config: &SdkConfig) -> DynamoDbClient {
         let dynamo_config = aws_sdk_dynamodb::config::Builder::from(config)
