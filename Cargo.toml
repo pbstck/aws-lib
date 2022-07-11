@@ -9,15 +9,16 @@ authors = [ "dev@pubstack.io" ]
 [dependencies]
 serde = { version="1.0.130", features = [ "derive" ] }
 serde_json = "1.0.71"
-serde_dynamo = { version = "4.0.2", features = [ "aws-sdk-dynamodb+0_13" ] }
+serde_dynamo = { version = "4.0.3", optional=true, features = [ "aws-sdk-dynamodb+0_15" ] }
 
-# AWS
-aws-config = { version =  "0.13.0", default-features = false, features = [ "native-tls" ] }
-aws-types = { version =  "0.13.0" }
-aws-sdk-dynamodb = { version = "0.13.0", default-features = false, features = [ "native-tls" ] }
-aws-sdk-lambda = { version = "0.13.0", default-features = false, features = ["native-tls"]}
+# AWS common
+aws-config = { version =  "0.15.0", default-features = false, features = [ "native-tls" ] }
+aws-types = { version =  "0.15.0" }
 aws-smithy-types = "0.45.0"
-aws-sdk-ecs = { version = "0.13.0", default-features = false, features = ["native-tls"]}
+# AWS optional
+aws-sdk-dynamodb = { version = "0.15.0", optional = true, default-features = false, features = [ "native-tls" ] }
+aws-sdk-lambda = { version = "0.15.0", optional = true, default-features = false, features = ["native-tls"]}
+aws-sdk-ecs = { version = "0.15.0", optional = true, default-features = false, features = ["native-tls"]}
 
 # Log
 tracing-subscriber = { version = "0.3.9", features = ["json", "env-filter"]}
@@ -28,9 +29,9 @@ bytes = "1.1.0"
 [features]
 all = [ "dynamodb", "lambda", "ecs" ]
 default = [ "all" ]
-dynamodb = []
-lambda = []
-ecs = []
+dynamodb = ["aws-sdk-dynamodb", "serde_dynamo"]
+lambda = ["aws-sdk-lambda"]
+ecs = ["aws-sdk-ecs"]
 
 [dev-dependencies]
 # Used for "ecs" module doc example
