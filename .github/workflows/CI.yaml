@@ -1,0 +1,50 @@
+name: Continuous integration
+on:
+  push:
+    tags-ignore: ['*']
+    branches:
+      - '**'
+concurrency:
+  group: environment-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test_and_build:
+    strategy:
+      matrix:
+        rust-version: [ '1.58.1', '1.59.0', '1.60.0', '1.61.0', '1.62.0']
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: pbstck/actions/setup-rust@v1.3
+        with:
+          rust-version: ${{ matrix.rust-version }}
+      - name: Install cargo-hack
+        shell: bash
+        run: cargo install cargo-hack
+      - name: Cargo fetch
+        uses: actions-rs/cargo@v1
+        with:
+          command: fetch
+      - name: Cargo test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+      - name: Cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - name: Cargo build all combinaisons of features
+        shell: bash
+        run: cargo hack check --each-feature
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Rust
+        uses: pbstck/actions/setup-rust@v1.3
+        with:
+          rust-version: '1.62.0'
+      - name: Lint
+        run: make lint/check

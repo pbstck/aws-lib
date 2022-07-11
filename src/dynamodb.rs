@@ -3,7 +3,7 @@ use aws_config::RetryConfig;
 use aws_types::SdkConfig;
 
 use super::errors::{AwsError, DEFAULT_RETRY_COUNT};
-use serde_dynamo::aws_sdk_dynamodb_0_13::from_items;
+use serde_dynamo::aws_sdk_dynamodb_0_15::from_items;
 
 pub struct DynamoDbClient {
     client: aws_sdk_dynamodb::Client,
