@@ -3,13 +3,14 @@ use crate::errors::AwsError;
 pub use aws_sdk_ecs::model::KeyValuePair;
 use aws_sdk_ecs::model::{
     AssignPublicIp, AwsVpcConfiguration, ContainerOverride, LaunchType, NetworkConfiguration,
-    PropagateTags, TaskOverride,
+    PropagateTags, Task, TaskOverride,
 };
+use aws_sdk_ecs::output::DescribeTasksOutput;
 use aws_sdk_ecs::RetryConfig;
 use aws_types::SdkConfig;
 use serde::Deserialize;
 
-/// An Elastic Container Service client
+/// An Elastic Container Service client.
 pub struct EcsClient {
     /// The underlying ECS client from the AWS SDK.
     pub client: aws_sdk_ecs::Client,
@@ -35,7 +36,7 @@ impl EcsClient {
         EcsClient { client }
     }
 
-    /// Launches a task definition
+    /// Launches a task definition.
     ///
     /// # Errors
     ///
@@ -87,6 +88,75 @@ impl EcsClient {
             }
         }
     }
+
+    /// Retrieves a task description from the provided task ARN and cluster.
+    ///
+    /// # Errors
+    ///
+    /// If the tasks can't be retrieved or if the first task doesn't contain any task override, container override, or override environment, then an error is returned.
+    pub async fn get_task_description(
+        &self,
+        cluster: &str,
+        task_arn: &str,
+    ) -> Result<TaskDescription, AwsError> {
+        let tasks_output = self
+            .client
+            .describe_tasks()
+            .cluster(cluster)
+            .tasks(task_arn)
+            .send()
+            .await;
+        match tasks_output {
+            Ok(DescribeTasksOutput {
+                tasks: Some(tasks), ..
+            }) => match get_description_from_tasks(&tasks) {
+                Some(description) => Ok(description),
+                None => Err(AwsError::new("could not extract description from tasks")),
+            },
+            Ok(DescribeTasksOutput { tasks: None, .. }) => Err(AwsError::new("no tasks found")),
+            Err(e) => Err(AwsError::new(format!("failed to get tasks {}", e).as_str())),
+        }
+    }
+}
+
+fn get_description_from_tasks(tasks: &[Task]) -> Option<TaskDescription> {
+    let first_container_override_environment = tasks
+        .first()?
+        .overrides()?
+        .container_overrides()?
+        .first()?
+        .environment()?;
+    get_description_from_override_environment(first_container_override_environment)
+}
+
+fn get_description_from_override_environment(env: &[KeyValuePair]) -> Option<TaskDescription> {
+    let s3_path = env
+        .iter()
+        .find(|&key_value_pair| key_value_pair.name() == Some("S3_PATH"))?
+        .value()?
+        .to_string();
+    let doctype = env
+        .iter()
+        .find(|&key_value_pair| key_value_pair.name() == Some("DOCTYPE"))?
+        .value()?
+        .to_string();
+    let index_suffix = env
+        .iter()
+        .find(|&key_value_pair| key_value_pair.name() == Some("INDEX_SUFFIX"))?
+        .value()?
+        .to_string();
+    Some(TaskDescription {
+        s3_path,
+        index_suffix,
+        doctype,
+    })
+}
+
+/// A struct containing relevant task description.
+pub struct TaskDescription {
+    pub s3_path: String,
+    pub index_suffix: String,
+    pub doctype: String,
 }
 
 /// A trait to make data structures convertible into key-value pairs used to override containers environments.
