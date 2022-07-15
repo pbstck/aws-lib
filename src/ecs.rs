@@ -12,7 +12,7 @@ use serde::Deserialize;
 /// An Elastic Container Service client
 pub struct EcsClient {
     /// The underlying ECS client from the AWS SDK.
-    client: aws_sdk_ecs::Client,
+    pub client: aws_sdk_ecs::Client,
 }
 
 /// Creates an ECS client using the default AWS SDK config.
