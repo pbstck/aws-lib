@@ -89,16 +89,16 @@ impl EcsClient {
         }
     }
 
-    /// Retrieves a task description from the provided task ARN and cluster.
+    /// Retrieves a task override environment from the provided task ARN and cluster.
     ///
     /// # Errors
     ///
     /// If the tasks can't be retrieved or if the first task doesn't contain any task override, container override, or override environment, then an error is returned.
-    pub async fn get_task_description(
+    pub async fn get_task_override_environment(
         &self,
         cluster: &str,
         task_arn: &str,
-    ) -> Result<TaskDescription, AwsError> {
+    ) -> Result<Vec<KeyValuePair>, AwsError> {
         let tasks_output = self
             .client
             .describe_tasks()
@@ -109,9 +109,11 @@ impl EcsClient {
         match tasks_output {
             Ok(DescribeTasksOutput {
                 tasks: Some(tasks), ..
-            }) => match get_description_from_tasks(&tasks) {
+            }) => match get_override_environment_from_tasks(&tasks) {
                 Some(description) => Ok(description),
-                None => Err(AwsError::new("could not extract description from tasks")),
+                None => Err(AwsError::new(
+                    "could not extract override environment from tasks",
+                )),
             },
             Ok(DescribeTasksOutput { tasks: None, .. }) => Err(AwsError::new("no tasks found")),
             Err(e) => Err(AwsError::new(format!("failed to get tasks {}", e).as_str())),
@@ -119,44 +121,14 @@ impl EcsClient {
     }
 }
 
-fn get_description_from_tasks(tasks: &[Task]) -> Option<TaskDescription> {
-    let first_container_override_environment = tasks
+fn get_override_environment_from_tasks(tasks: &[Task]) -> Option<Vec<KeyValuePair>> {
+    tasks
         .first()?
         .overrides()?
         .container_overrides()?
         .first()?
-        .environment()?;
-    get_description_from_override_environment(first_container_override_environment)
-}
-
-fn get_description_from_override_environment(env: &[KeyValuePair]) -> Option<TaskDescription> {
-    let s3_path = env
-        .iter()
-        .find(|&key_value_pair| key_value_pair.name() == Some("S3_PATH"))?
-        .value()?
-        .to_string();
-    let doctype = env
-        .iter()
-        .find(|&key_value_pair| key_value_pair.name() == Some("DOCTYPE"))?
-        .value()?
-        .to_string();
-    let index_suffix = env
-        .iter()
-        .find(|&key_value_pair| key_value_pair.name() == Some("INDEX_SUFFIX"))?
-        .value()?
-        .to_string();
-    Some(TaskDescription {
-        s3_path,
-        index_suffix,
-        doctype,
-    })
-}
-
-/// A struct containing relevant task description.
-pub struct TaskDescription {
-    pub s3_path: String,
-    pub index_suffix: String,
-    pub doctype: String,
+        .environment()
+        .map(|env| env.to_vec())
 }
 
 /// A trait to make data structures convertible into key-value pairs used to override containers environments.
