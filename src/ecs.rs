@@ -3,13 +3,14 @@ use crate::errors::AwsError;
 pub use aws_sdk_ecs::model::KeyValuePair;
 use aws_sdk_ecs::model::{
     AssignPublicIp, AwsVpcConfiguration, ContainerOverride, LaunchType, NetworkConfiguration,
-    PropagateTags, TaskOverride,
+    PropagateTags, Task, TaskOverride,
 };
+use aws_sdk_ecs::output::DescribeTasksOutput;
 use aws_sdk_ecs::RetryConfig;
 use aws_types::SdkConfig;
 use serde::Deserialize;
 
-/// An Elastic Container Service client
+/// An Elastic Container Service client.
 pub struct EcsClient {
     /// The underlying ECS client from the AWS SDK.
     pub client: aws_sdk_ecs::Client,
@@ -35,7 +36,7 @@ impl EcsClient {
         EcsClient { client }
     }
 
-    /// Launches a task definition
+    /// Launches a task definition.
     ///
     /// # Errors
     ///
@@ -87,6 +88,47 @@ impl EcsClient {
             }
         }
     }
+
+    /// Retrieves a task override environment from the provided task ARN and cluster.
+    ///
+    /// # Errors
+    ///
+    /// If the tasks can't be retrieved or if the first task doesn't contain any task override, container override, or override environment, then an error is returned.
+    pub async fn get_task_override_environment(
+        &self,
+        cluster: &str,
+        task_arn: &str,
+    ) -> Result<Vec<KeyValuePair>, AwsError> {
+        let tasks_output = self
+            .client
+            .describe_tasks()
+            .cluster(cluster)
+            .tasks(task_arn)
+            .send()
+            .await;
+        match tasks_output {
+            Ok(DescribeTasksOutput {
+                tasks: Some(tasks), ..
+            }) => match get_override_environment_from_tasks(&tasks) {
+                Some(description) => Ok(description),
+                None => Err(AwsError::new(
+                    "could not extract override environment from tasks",
+                )),
+            },
+            Ok(DescribeTasksOutput { tasks: None, .. }) => Err(AwsError::new("no tasks found")),
+            Err(e) => Err(AwsError::new(format!("failed to get tasks {}", e).as_str())),
+        }
+    }
+}
+
+fn get_override_environment_from_tasks(tasks: &[Task]) -> Option<Vec<KeyValuePair>> {
+    tasks
+        .first()?
+        .overrides()?
+        .container_overrides()?
+        .first()?
+        .environment()
+        .map(|env| env.to_vec())
 }
 
 /// A trait to make data structures convertible into key-value pairs used to override containers environments.
